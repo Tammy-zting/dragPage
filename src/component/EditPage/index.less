@@ -1,0 +1,86 @@
+.editPage {
+    height: 100vh;
+    // :global {
+    //     //修改ant的样式 但是不会修改到全局的其他样式
+    //     .ant-tree ,.ant-tree-show-line .ant-tree-switcher{
+    //         background: #fafafa;
+    //     }
+       
+    // }
+
+    .attrPanel {
+        padding-right: 0px !important;
+        background: #fafafa;
+    }
+
+    .editPanel {
+        border: 1px solid #d9d9d9;
+        border-top: 0;
+     
+        main {
+            padding:14px 10px;
+            flex: 1;
+            .flag {
+                height: 20px;
+                margin: -10px auto 0 15px;
+                font-size: 14px;
+                padding: 0 10px;
+                width: 80px;
+                text-align: center;
+                background: #fff;
+                position: absolute;
+                z-index:99;
+                font-weight: 600;
+            }
+            >div {
+                padding: 10px;
+                border: 1px solid red;
+            }
+
+            // 增加边框 内边距 可以更好定位元素
+            .borderShow {
+                border: 1px dotted red;
+                padding: 5px;
+            }
+
+            .mask:hover,
+            .selected {
+                position: relative;
+                border: 1px dotted blue !important;
+                cursor: pointer;
+
+                &:after {
+                    content: '';
+                    width: 10px;
+                    height: 10px;
+                    background: #d9d9d9;
+                    position: absolute;
+                    right: 0;
+                    bottom: 0;
+                }
+            }
+
+        }
+
+    }
+
+    .configPanel {
+        padding-left: 10px!important;
+        background: #fafafa;
+        // height: 100vh;
+    }
+
+}
+
+//头部属性区
+.addAttrPanel {
+    background: #fafafa;
+    border-bottom: 1px solid #d9d9d9;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    label {
+        vertical-align: middle;
+        margin-right: 5px;
+    }
+}

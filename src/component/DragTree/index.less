@@ -1,0 +1,10 @@
+//外加一层类名不会修改到全局其他组件
+.dragTree {
+    :global {
+        //修改ant的样式 但是不会修改到全局的其他样式
+        .ant-tree,
+        .ant-tree-show-line .ant-tree-switcher {
+            background: #fafafa;
+        }
+    }
+}
