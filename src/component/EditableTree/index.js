@@ -1,4 +1,4 @@
-import React, { useState ,useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tree } from 'antd';
 import {
   CheckOutlined,
@@ -10,7 +10,7 @@ import {
 } from '@ant-design/icons';
 import styles from './index.less';
 import update from 'immutability-helper';
-
+import { indexToArray } from '../utils'
 const { TreeNode } = Tree;
 
 function EditableTree() {
@@ -22,8 +22,8 @@ function EditableTree() {
     {
       value: 'Root',
       defaultValue: 'Root',
-      key: '0-1',
-      parentKey: '0',
+      key: '0',
+      parentKey: 'Root',
       isEditable: true,
       // children:[{
       //   defaultValue: "default",
@@ -39,7 +39,7 @@ function EditableTree() {
 
   useEffect(() => {
     onExpand([])
-  },[])
+  }, [])
 
   const onExpand = (expandedKeys) => {
     console.log('onExpand', expandedKeys);
@@ -69,7 +69,7 @@ function EditableTree() {
           <span className={styles.operationField} >
             <EditOutlined style={{ marginLeft: 10 }} onClick={() => onEdit(item.key)} />
             <PlusOutlined style={{ marginLeft: 10 }} onClick={() => onAdd(item.key)} />
-            {item.parentKey === '0' ? null : (<MinusOutlined style={{ marginLeft: 10 }} onClick={() => onDelete(item.key)} />)}
+            {item.parentKey === 'Root' ? null : (<MinusOutlined style={{ marginLeft: 10 }} onClick={() => onDelete(item.key)} />)}
           </span>
         </div>
       )
@@ -82,13 +82,14 @@ function EditableTree() {
         </TreeNode>
       );
     }
-    let {title,...otherItem} = item
+    let { title, ...otherItem } = item
     return <TreeNode {...otherItem} title={renderTitle} />;
   })
 
 
   const onAdd = (e) => {
     console.log('add');
+    console.log(addNode(e, data))
     setData(addNode(e, data));
     // 防止expandedKeys重复
     setExpandedKeys([...new Set([...expandedKeys, e])])
@@ -96,68 +97,41 @@ function EditableTree() {
 
   const addNode = (key, data) => data.map((item) => {
     if (item.key === key) {
-
-      if (item.children) {
-      
-        return update(item, {
-          children: {
-            $push: [{
-              value: 'default',
-              defaultValue: 'default',
-              key: key + Math.random(100), // 这个 key 应该是唯一的。 Tip: The key should be unique
-              parentKey: key,
-              isEditable: false
-            }]
-          }
-        })
-
-      } else {
-        console.log({key})
-        console.log("addNode",item)
-      
-        return {
-          ...item,
-          children:[{
-            value: 'default',
-            defaultValue: 'default',
-            key: key + Math.random(100),
+      let newValue = !item['children'] && 1 || (item.children.length + 1)
+      return update(item, {
+        children: children => update(children || [], {
+          $push: [{
+            value: '页面',
+            defaultValue: '新页面',
+            key: Math.random(100),
             parentKey: key,
             isEditable: false
-          }
-        ]
-        } 
-        // return update(item, {
-        //   children: {
-        //     $push: [{
-        //       value: 'default',
-        //       defaultValue: 'default',
-        //       key: key + Math.random(100),
-        //       parentKey: key,
-        //       isEditable: false
-        //     }]
-        //   }
-        // })
-      }
+          }]
+        })
+      })
     }
+
     if (item.children) {
-      let data = addNode(key, item.children)
-      return {...item,...data}
+      return update(item, { children: () => addNode(key, item.children) })
+    } else {
+      return item
     }
   })
 
   const onDelete = (key) => {
     console.log('delete');
+    console.log(deleteNode(key, data))
     setData(deleteNode(key, data));
   }
 
   const deleteNode = (key, data) => data.map((item, index) => {
     if (item.key === key) {
-      console.log('delete update',data ,update(data,{$splice:[[index,1]]}))
-      return update(data,{$splice:[[index,1]]});
+      return null
+    }
+    if (item.children) {
+      return update(item, { children: () => deleteNode(key, item.children).filter(x => x !== null) })
     } else {
-      if (item.children) {
-        deleteNode(key, item.children)
-      }
+      return item
     }
   })
 
@@ -167,18 +141,16 @@ function EditableTree() {
   }
 
   const editNode = (key, data) => data.map((item) => {
-    let newData
+
     if (item.key === key) {
-      newData = update(item,{$merge:{isEditable:true,value:item.defaultValue}})
-    } else {
-      newData = update(item,{$merge:{isEditable:false,value:item.defaultValue}})
+      return update(item, { $merge: { isEditable: true, value: item.defaultValue } })
     }
-    //Tip: Must have, when a node is editable, and you click a button to make other node editable, the node which you don't save yet will be not editable, and its value should be defaultValue 
-    // 当某节点处于编辑状态，并改变数据，点击编辑其他节点时，此节点变成不可编辑状态，value 需要回退到 defaultvalue
+
     if (item.children) {
-      editNode(key, item.children)
+      return update(item, { children: () => editNode(key, item.children) })
+    } else {
+      return item
     }
-    return newData
   })
 
   const onClose = (key, defaultValue) => {
@@ -188,9 +160,9 @@ function EditableTree() {
 
   const closeNode = (key, defaultValue, data) => data.map((item) => {
     let newData
-    newData = update(item,{isEditable:{$set:false}})
+    newData = update(item, { isEditable: { $set: false } })
     if (item.key === key) {
-      newData = update(newData,{value:{$set:defaultValue}})
+      newData = update(newData, { value: { $set: defaultValue } })
     }
     if (item.children) {
       closeNode(key, defaultValue, item.children)
@@ -204,14 +176,15 @@ function EditableTree() {
   }
 
   const saveNode = (key, data) => data.map((item) => {
-    let newData
+
     if (item.key === key) {
-        newData = update(item,{$merge:{defaultValue:item.value,isEditable:false}})
+      return update(item, { $merge: { defaultValue: item.value, isEditable: false } })
     }
     if (item.children) {
-      saveNode(key, item.children)
+      return update(item, { children: () => saveNode(key, item.children) })
+    } else {
+      return item
     }
-    return newData
   })
 
   const onChange = (e, key) => {
@@ -220,27 +193,29 @@ function EditableTree() {
   }
 
   const changeNode = (key, value, data) => data.map((item) => {
-    let newData
+
     if (item.key === key) {
-      newData = update(item,{value:{$set:value}})
+      return update(item, { $merge: { value: value } })
     }
     if (item.children) {
-      changeNode(key, value, item.children)
+      return update(item, { children: () => changeNode(key, value, item.children) })
+    } else {
+      return item
     }
-    return newData
+
   })
 
- 
-    return (
-      <div>
-        <Tree expandedKeys={expandedKeys} selectedKeys={[]} onExpand={onExpand}
-          showLine
-          blockNode>
-          {renderTreeNodes(data)}
-        </Tree>
-      </div>
-    )
-  
+
+  return (
+    <div>
+      <Tree expandedKeys={expandedKeys} selectedKeys={[]} onExpand={onExpand}
+        showLine
+        blockNode>
+        {renderTreeNodes(data)}
+      </Tree>
+    </div>
+  )
+
 }
 
 export default EditableTree;
